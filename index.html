@@ -25,7 +25,6 @@
     --amber: #e0a23a;
     --amber-bg: rgba(224,162,58,0.15);
     --red: #e05c5c;
-    --red-bg: rgba(224,92,92,0.15);
     --radius: 10px;
     --radius-lg: 14px;
   }
@@ -106,79 +105,7 @@
   .view { display: none; }
   .view.active { display: block; }
 
-  /* Dashboard */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 28px;
-  }
-  .stat-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 18px;
-  }
-  .stat-card .label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-  .stat-card .value { font-size: 28px; font-weight: 700; color: var(--text); }
-  .stat-card .sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
 
-  .section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .section-title .badge {
-    font-size: 11px;
-    font-weight: 500;
-    background: var(--accent-bg);
-    color: var(--accent2);
-    padding: 2px 8px;
-    border-radius: 20px;
-  }
-
-  /* Up next row */
-  .up-next-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
-  }
-
-  .up-next-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    display: flex;
-    gap: 0;
-  }
-  .up-next-poster {
-    width: 72px;
-    min-height: 100px;
-    background: var(--bg3);
-    flex-shrink: 0;
-    object-fit: cover;
-  }
-  .up-next-poster-placeholder {
-    width: 72px;
-    min-height: 100px;
-    background: var(--bg3);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: var(--text3);
-  }
-  .up-next-info { padding: 12px 14px; flex: 1; min-width: 0; }
-  .up-next-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-  .up-next-ep { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
-  .up-next-date { font-size: 12px; }
   .pill {
     display: inline-flex;
     align-items: center;
@@ -237,7 +164,6 @@
   }
   .series-card-info { padding: 10px 16px; flex: 1; min-width: 0; }
   .series-card-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
-  .series-card-meta { font-size: 12px; color: var(--text2); }
   .series-card-progress {
     height: 3px;
     background: var(--bg4);
@@ -542,9 +468,6 @@
   </header>
 
   <main>
-    <!-- Dashboard (unused) -->
-    <div class="view" id="view-dashboard"></div>
-
     <!-- My Series -->
     <div class="view active" id="view-series">
       <div class="filter-row">
@@ -724,8 +647,11 @@ function nextUnwatched(s) {
     const eps = s.seasons[sn];
     for (const ep of eps) {
       if (!s.watched?.[sn]?.[ep.ep_num]) {
-        // Only return if already aired
-        if (!ep.air_date || new Date(ep.air_date+'T00:00:00') <= new Date()) return ep;
+        // Only return if aired before today (today's episodes treated as future)
+        if (!ep.air_date) return ep;
+        const d = new Date(ep.air_date+'T00:00:00'); d.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
+        if (d < today) return ep;
       }
     }
   }
@@ -882,6 +808,7 @@ function renderSeriesList() {
           <div class="series-card-title" style="margin:0">${s.name}</div>
           <span style="font-size:11px;color:var(--text3);white-space:nowrap">${w}/${aired} eps</span>
           ${badge}
+          ${showStatusBadge(s.showStatus)}
         </div>
         ${scheduleStr ? `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${scheduleStr}</div>` : '<div style="margin-bottom:6px"></div>'}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:6px">${lastLine}${nextLine}</div>
@@ -932,6 +859,7 @@ function renderDetail(id) {
           ${s.year ? `<span>${s.year}</span>` : ''}
           ${s.network ? `<span>${s.network}</span>` : ''}
           ${s.airDay ? `<span>Airs ${s.airDay}s${s.airTime ? ' at '+s.airTime : ''}</span>` : ''}
+          ${s.showStatus ? showStatusBadge(s.showStatus) : ''}
           <span>${tot} episodes</span>
           <span>${w} watched (${pct}%)</span>
         </div>
@@ -977,43 +905,9 @@ function renderDetail(id) {
           onclick="toggleEp('${id}', ${currentSeason}, ${ep.ep_num})">${checkmark()}</button>
       </div>`;
     }).join('') + `</div>`;
-  } else {
-    // No episode data yet — show manual add form
-    html += renderManualEpisodeForm(id);
   }
 
   document.getElementById('detail-content').innerHTML = html;
-}
-
-function renderManualEpisodeForm(id) {
-  return `
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:4px;">
-    <div style="font-size:14px;color:var(--text2);margin-bottom:14px;">No episode data loaded. Add seasons manually or use a TMDB API key.</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <input id="ms-season" type="number" min="1" value="1" placeholder="Season #"
-        style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;width:110px;">
-      <input id="ms-eps" type="number" min="1" value="10" placeholder="Episodes"
-        style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;width:110px;">
-      <button class="btn btn-primary" onclick="addManualSeason('${id}')">Add Season</button>
-    </div>
-    <p style="font-size:12px;color:var(--text3)">Episode names and air dates require a free TMDB API key (add it at the top of the script).</p>
-  </div>`;
-}
-
-function addManualSeason(id) {
-  const sn = parseInt(document.getElementById('ms-season').value) || 1;
-  const epCount = parseInt(document.getElementById('ms-eps').value) || 10;
-  const db = DB.get();
-  const s = db.series[id];
-  if (!s.seasons) s.seasons = {};
-  s.seasons[sn] = [];
-  for (let i = 1; i <= epCount; i++) {
-    s.seasons[sn].push({ season: sn, ep_num: i, name: 'Episode ' + i, air_date: null });
-  }
-  DB.flush();
-  currentSeason = sn;
-  renderDetail(id);
-  toast('Season ' + sn + ' added!');
 }
 
 function switchSeason(n) {
@@ -1091,7 +985,6 @@ function parseEpisodes(allEps) {
       ep_num: ep.number,
       name: ep.name,
       air_date: ep.airdate || null,
-      airtime: ep.airtime || null,
       overview: API.stripHtml(ep.summary)
     });
   }
@@ -1108,9 +1001,27 @@ function seriesFromTVmaze(d, seasons, existing) {
     network: d.network?.name || d.webChannel?.name || '',
     airDay: d.schedule?.days?.[0] || '',
     airTime: d.schedule?.time || '',
+    showStatus: d.status || '',
     posterUrl: API.poster(d) || existing?.posterUrl || null,
     seasons,
   };
+}
+
+function showStatusBadge(showStatus) {
+  if (!showStatus) return '';
+  const map = {
+    'Running':            ['accent', 'Running'],
+    'Ended':              ['gray',   'Ended'],
+    'To Be Determined':   ['amber',  'TBD'],
+    'In Development':     ['amber',  'In Development'],
+  };
+  const [type, label] = map[showStatus] || ['gray', showStatus];
+  const styles = {
+    accent: 'background:var(--accent-bg);color:var(--accent2);border:1px solid rgba(124,111,247,0.3)',
+    amber:  'background:var(--amber-bg);color:var(--amber);border:1px solid rgba(224,162,58,0.3)',
+    gray:   'background:var(--bg4);color:var(--text2);border:1px solid var(--border2)',
+  };
+  return `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;${styles[type]}">${label}</span>`;
 }
 
 // ─── Add Series ───────────────────────────────────────────────────────────────
@@ -1144,28 +1055,6 @@ async function doSearch() {
   } catch(e) {
     res.innerHTML = `<div class="empty-state"><div class="icon">⚠</div><h3>Search failed</h3><p>Please try again.</p></div>`;
   }
-}
-
-function addManualSeries() {
-  const name = document.getElementById('manual-name').value.trim();
-  if (!name) return;
-  const id = 'manual_' + Date.now();
-  const db = DB.get();
-  db.series[id] = {
-    id,
-    name,
-    year: document.getElementById('manual-year').value.trim(),
-    overview: document.getElementById('manual-overview').value.trim(),
-    status: 'watching',
-    seasons: {},
-    watched: {},
-    lastActivity: Date.now()
-  };
-  DB.flush();
-  toast(`"${name}" added!`);
-  document.getElementById('add-search-results').innerHTML = '';
-  document.getElementById('add-search-input').value = '';
-  openDetail(id, 'add');
 }
 
 async function addSeries(tvmazeId) {
@@ -1313,11 +1202,16 @@ document.getElementById('sync-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('sync-modal')) closeSyncModal();
 });
 
-async function saveAndPush() {
+function saveSyncInputs() {
   const token = document.getElementById('sync-token-input').value.trim();
   const gistId = document.getElementById('sync-gist-input').value.trim();
-  if (!token || !gistId) { setModalStatus('Please enter both a token and a Gist ID.', 'var(--amber)'); return; }
+  if (!token || !gistId) { setModalStatus('Please enter both a token and a Gist ID.', 'var(--amber)'); return null; }
   SYNC.save(token, gistId);
+  return true;
+}
+
+async function saveAndPush() {
+  if (!saveSyncInputs()) return;
   setModalStatus('Pushing…', 'var(--text2)');
   try {
     await SYNC.push(DB.get());
@@ -1330,10 +1224,7 @@ async function saveAndPush() {
 }
 
 async function pullFromGist() {
-  const token = document.getElementById('sync-token-input').value.trim();
-  const gistId = document.getElementById('sync-gist-input').value.trim();
-  if (!token || !gistId) { setModalStatus('Please enter both a token and a Gist ID.', 'var(--amber)'); return; }
-  SYNC.save(token, gistId);
+  if (!saveSyncInputs()) return;
   setModalStatus('Pulling…', 'var(--text2)');
   try {
     const data = await SYNC.pull();
