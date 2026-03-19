@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TV Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --bg2: #1a1a22;
+    --bg3: #22222e;
+    --bg4: #2a2a38;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --text3: #5a5a72;
+    --accent: #7c6ff7;
+    --accent2: #9b8ff9;
+    --accent-bg: rgba(124,111,247,0.15);
+    --green: #4caf85;
+    --green-bg: rgba(76,175,133,0.15);
+    --amber: #e0a23a;
+    --amber-bg: rgba(224,162,58,0.15);
+    --red: #e05c5c;
+    --red-bg: rgba(224,92,92,0.15);
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+  }
+  .logo span { color: var(--text2); font-weight: 400; }
+
+  nav { display: flex; gap: 4px; flex: 1; }
+  nav button {
+    background: none;
+    border: none;
+    color: var(--text2);
+    padding: 6px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  nav button:hover { background: var(--bg3); color: var(--text); }
+  nav button.active { background: var(--accent-bg); color: var(--accent2); }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+    gap: 8px;
+    width: 260px;
+  }
+  .search-bar input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 14px;
+    width: 100%;
+    padding: 8px 0;
+  }
+  .search-bar input::placeholder { color: var(--text3); }
+  .search-icon { color: var(--text3); font-size: 16px; }
+
+  main { flex: 1; padding: 28px 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+  /* Views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Dashboard */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .stat-card .label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-card .sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .badge {
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--accent-bg);
+    color: var(--accent2);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  /* Up next row */
+  .up-next-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .up-next-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    gap: 0;
+  }
+  .up-next-poster {
+    width: 72px;
+    min-height: 100px;
+    background: var(--bg3);
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+  .up-next-poster-placeholder {
+    width: 72px;
+    min-height: 100px;
+    background: var(--bg3);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--text3);
+  }
+  .up-next-info { padding: 12px 14px; flex: 1; min-width: 0; }
+  .up-next-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .up-next-ep { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .up-next-date { font-size: 12px; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    gap: 4px;
+  }
+  .pill.green { background: var(--green-bg); color: var(--green); }
+  .pill.amber { background: var(--amber-bg); color: var(--amber); }
+  .pill.accent { background: var(--accent-bg); color: var(--accent2); }
+  .pill.gray { background: var(--bg4); color: var(--text2); }
+
+  /* Series list */
+  .series-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .series-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 12px;
+  }
+  .series-card:hover { border-color: var(--border2); background: var(--bg3); }
+  .series-card-poster {
+    width: 54px;
+    height: 90px;
+    background: var(--bg3);
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+    border-radius: 6px;
+    margin: 8px 0;
+  }
+  .series-card-poster-ph {
+    width: 54px;
+    height: 90px;
+    background: var(--bg3);
+    border-radius: 6px;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .series-card-info { padding: 10px 16px; flex: 1; min-width: 0; }
+  .series-card-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+  .series-card-meta { font-size: 12px; color: var(--text2); }
+  .series-card-progress {
+    height: 3px;
+    background: var(--bg4);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .series-card-progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* Search results */
+  .search-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .search-result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .search-result-card:hover { border-color: var(--border2); }
+  .search-result-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    background: var(--bg3);
+    display: block;
+  }
+  .search-result-poster-ph {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: var(--bg3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    color: var(--text3);
+  }
+  .search-result-info { padding: 10px 12px 14px; }
+  .search-result-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; line-height: 1.3; }
+  .search-result-year { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
+  .add-btn {
+    width: 100%;
+    padding: 7px 0;
+    border-radius: 7px;
+    border: 1px solid rgba(124,111,247,0.4);
+    background: var(--accent-bg);
+    color: var(--accent2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .add-btn.added { background: var(--green-bg); color: var(--green); border-color: rgba(76,175,133,0.4); cursor: default; }
+
+  /* Detail view */
+  .detail-header {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 28px;
+    align-items: flex-start;
+  }
+  .detail-poster {
+    width: 140px;
+    border-radius: var(--radius);
+    object-fit: cover;
+    flex-shrink: 0;
+    aspect-ratio: 2/3;
+    background: var(--bg3);
+  }
+  .detail-poster-ph {
+    width: 140px;
+    aspect-ratio: 2/3;
+    background: var(--bg3);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .detail-info { flex: 1; }
+  .detail-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .detail-meta { font-size: 13px; color: var(--text2); margin-bottom: 10px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .detail-overview { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 14px; max-width: 640px; }
+  .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-secondary { background: var(--bg3); color: var(--text2); border-color: var(--border); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--border2); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border-color: rgba(224,92,92,0.3); }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+
+  /* Season tabs */
+  .season-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .season-tab {
+    padding: 6px 14px;
+    border-radius: 7px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .season-tab:hover { border-color: var(--border2); color: var(--text); }
+  .season-tab.active { background: var(--accent-bg); border-color: rgba(124,111,247,0.4); color: var(--accent2); }
+
+  /* Episode list */
+  .episode-list { display: flex; flex-direction: column; gap: 2px; }
+  .episode-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .episode-item:hover { border-color: var(--border2); }
+  .episode-item.watched { opacity: 0.5; }
+  .episode-item.future { opacity: 0.5; }
+  .ep-num { font-size: 12px; color: var(--text3); min-width: 30px; font-variant-numeric: tabular-nums; }
+  .ep-title { flex: 1; font-size: 13px; font-weight: 500; }
+  .ep-date { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .ep-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .ep-check:hover { border-color: var(--accent); color: var(--accent); }
+  .ep-check.checked { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ep-check svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Empty states */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Search input in add view */
+  .add-search-wrap {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .add-search-input {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 15px;
+    padding: 10px 16px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-search-input:focus { border-color: var(--accent); }
+  .add-search-input::placeholder { color: var(--text3); }
+  .search-submit-btn {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .search-submit-btn:hover { background: var(--accent2); }
+
+  /* Filters */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: var(--accent-bg); border-color: rgba(124,111,247,0.4); color: var(--accent2); }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-msg { color: var(--text2); font-size: 14px; padding: 16px 0; display: flex; align-items: center; gap: 10px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Back button */
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    margin-bottom: 18px;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .mark-all-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .progress-text { font-size: 13px; color: var(--text2); margin-left: auto; }
+
+  @media (max-width: 700px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    header { padding: 0 14px; gap: 12px; }
+    .search-bar { display: none; }
+    main { padding: 18px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">TV<span>tracker</span></div>
+    <nav>
+      <button class="active" data-view="series">My Series</button>
+      <button data-view="add">+ Add</button>
+    </nav>
+    <div class="search-bar">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="Quick search…" id="header-search">
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <div id="sync-status" style="font-size:12px;color:var(--text3)"></div>
+      <button onclick="openSyncModal()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;transition:all 0.15s" id="sync-btn">☁ Sync</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Dashboard (unused) -->
+    <div class="view" id="view-dashboard"></div>
+
+    <!-- My Series -->
+    <div class="view active" id="view-series">
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="watching">Watching</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn" data-filter="paused">Paused</button>
+        <button id="refresh-all-btn" style="margin-left:auto;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:all 0.15s" onclick="refreshAllSeries()">↻ Update all</button>
+      </div>
+      <div id="refresh-status" style="display:none;font-size:13px;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px"></div>
+      <div class="series-grid" id="series-grid"></div>
+    </div>
+
+    <!-- Add Series -->
+    <div class="view" id="view-add">
+      <div class="add-search-wrap">
+        <input class="add-search-input" type="text" id="add-search-input" placeholder="Search for a TV series…">
+        <button class="search-submit-btn" id="add-search-btn">Search</button>
+      </div>
+      <div id="add-search-results"></div>
+    </div>
+
+    <!-- Detail -->
+    <div class="view" id="view-detail">
+      <button class="back-btn" id="back-btn">← Back</button>
+      <div id="detail-content"></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Sync Modal -->
+<div id="sync-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:460px;margin:0 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:600">GitHub Gist Sync</div>
+      <button onclick="closeSyncModal()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6">
+      Sync your data across computers using a private GitHub Gist.<br>
+      You need a <b style="color:var(--text)">GitHub Personal Access Token</b> with the <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">gist</code> scope, and a <b style="color:var(--text)">Gist ID</b>.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">GitHub Token</div>
+        <input id="sync-token-input" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:9px 14px;border-radius:8px;font-size:13px;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Gist ID</div>
+        <input id="sync-gist-input" type="text" placeholder="e.g. a1b2c3d4e5f6..."
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:9px 14px;border-radius:8px;font-size:13px;outline:none">
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:18px">
+      Token and Gist ID are stored locally in this browser only.
+      <a href="https://github.com/settings/tokens/new?scopes=gist&description=TVTracker" target="_blank"
+        style="color:var(--accent2);text-decoration:none"> Create a token ↗</a> ·
+      <a href="https://gist.github.com" target="_blank" style="color:var(--accent2);text-decoration:none">Create a Gist ↗</a>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="saveAndPush()" style="background:var(--accent);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Save & push</button>
+      <button onclick="pullFromGist()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer">Pull from Gist</button>
+      <button onclick="clearSyncSettings()" style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;margin-left:auto">Clear settings</button>
+    </div>
+    <div id="sync-modal-status" style="margin-top:14px;font-size:13px;min-height:20px"></div>
+  </div>
+</div>
+
+<script>
+// ─── Storage ─────────────────────────────────────────────────────────────────
+const DB = {
+  load() { try { return JSON.parse(localStorage.getItem('tvtracker') || '{"series":{}}'); } catch { return {series:{}}; } },
+  save(data) { localStorage.setItem('tvtracker', JSON.stringify(data)); },
+  get() { return this._d || (this._d = this.load()); },
+  flush() { this.save(this._d); }
+};
+
+// ─── TVmaze API ───────────────────────────────────────────────────────────────
+const API = {
+  base: 'https://api.tvmaze.com',
+
+  async search(q) {
+    const r = await fetch(`${this.base}/search/shows?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    return d || [];
+  },
+
+  async details(id) {
+    const r = await fetch(`${this.base}/shows/${id}`);
+    return await r.json();
+  },
+
+  async episodes(id) {
+    const r = await fetch(`${this.base}/shows/${id}/episodes`);
+    return await r.json();
+  },
+
+  stripHtml(html) {
+    if (!html) return '';
+    return html.replace(/<[^>]+>/g, '');
+  },
+
+  poster(show) {
+    return show?.image?.medium || show?.image?.original || null;
+  }
+};
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function fmt(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T12:00:00Z');
+  if (isNaN(d)) return dateStr;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(dateStr + 'T00:00:00'); d.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+function checkmark() {
+  return `<svg viewBox="0 0 14 14"><polyline points="2,7 6,11 12,3"/></svg>`;
+}
+
+function posterEl(url, cls, alt) {
+  if (url) return `<img class="${cls}" src="${url}" alt="${alt||''}" loading="lazy">`;
+  return `<div class="${cls.replace('poster','poster-ph')}">📺</div>`;
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+let currentView = 'dashboard';
+let detailBack = 'dashboard';
+
+function showView(name, fromView) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === name);
+  });
+  currentView = name;
+  if (name === 'series') renderSeriesList();
+  if (fromView) detailBack = fromView;
+}
+
+document.querySelectorAll('nav button').forEach(b => {
+  b.addEventListener('click', () => showView(b.dataset.view));
+});
+
+document.getElementById('back-btn').addEventListener('click', () => showView(detailBack));
+
+// ─── Series helpers ───────────────────────────────────────────────────────────
+function totalEpCount(s) {
+  if (!s.seasons) return s.episodeCount || 0;
+  return Object.values(s.seasons).reduce((t, eps) => t + eps.length, 0);
+}
+
+function watchedCount(s) {
+  if (!s.watched) return 0;
+  return Object.values(s.watched).reduce((t, eps) => t + Object.values(eps).filter(Boolean).length, 0);
+}
+
+function nextUnwatched(s) {
+  if (!s.seasons) return null;
+  const sNums = Object.keys(s.seasons).map(Number).sort((a,b)=>a-b);
+  for (const sn of sNums) {
+    const eps = s.seasons[sn];
+    for (const ep of eps) {
+      if (!s.watched?.[sn]?.[ep.ep_num]) {
+        // Only return if already aired
+        if (!ep.air_date || new Date(ep.air_date+'T00:00:00') <= new Date()) return ep;
+      }
+    }
+  }
+  return null;
+}
+
+function nextEpisode(s) {
+  if (!s.seasons) return null;
+  const sNums = Object.keys(s.seasons).map(Number).sort((a,b)=>a-b);
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (const sn of sNums) {
+    for (const ep of s.seasons[sn]) {
+      if (!ep.air_date) continue;
+      const d = new Date(ep.air_date+'T00:00:00'); d.setHours(0,0,0,0);
+      if (d >= today && !s.watched?.[sn]?.[ep.ep_num]) return ep;
+    }
+  }
+  return null;
+}
+
+function lastWatchedEpisode(s) {
+  if (!s.seasons || !s.watched) return null;
+  const sNums = Object.keys(s.seasons).map(Number).sort((a,b)=>b-a);
+  for (const sn of sNums) {
+    const eps = [...(s.seasons[sn] || [])].reverse();
+    for (const ep of eps) {
+      if (s.watched[sn]?.[ep.ep_num]) return ep;
+    }
+  }
+  return null;
+}
+
+// ─── Series List ──────────────────────────────────────────────────────────────
+function epTag(ep) {
+  return `S${String(ep.season||1).padStart(2,'0')}E${String(ep.ep_num||1).padStart(2,'0')}`;
+}
+
+function epToggleBtn(seriesId, ep, isWatched, label) {
+  const icon = `<svg viewBox="0 0 14 14" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="2,7 6,11 12,3"/></svg>`;
+  const style = isWatched
+    ? `background:var(--bg4);border:1px solid var(--border2);color:var(--text2)`
+    : `background:var(--accent-bg);border:1px solid rgba(124,111,247,0.35);color:var(--accent2)`;
+  return `<button title="${label}" style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;cursor:pointer;${style};transition:all 0.15s"
+    onclick="event.stopPropagation();toggleEp('${seriesId}',${ep.season},${ep.ep_num})">${icon}</button>`;
+}
+
+
+let currentFilter = 'all';
+
+document.querySelectorAll('.filter-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentFilter = b.dataset.filter;
+    renderSeriesList();
+  });
+});
+
+function renderSeriesList() {
+  const db = DB.get();
+  const all = Object.values(db.series);
+  const filtered = all.filter(s => {
+    if (currentFilter === 'all') return true;
+    return (s.status || 'watching') === currentFilter;
+  });
+
+  filtered.sort((a, b) => {
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    const unwatchedA = nextUnwatched(a);  // already aired, not watched
+    const unwatchedB = nextUnwatched(b);
+    const dateA = unwatchedA?.air_date || nextEpisode(a)?.air_date || null;
+    const dateB = unwatchedB?.air_date || nextEpisode(b)?.air_date || null;
+
+    const availA = !!unwatchedA;
+    const availB = !!unwatchedB;
+
+    // Group 1: has an available (aired) unwatched episode
+    // Group 2: next unwatched is a future episode
+    // Group 3: no unwatched episodes / no date info
+    const groupA = availA ? 0 : (dateA ? 1 : 2);
+    const groupB = availB ? 0 : (dateB ? 1 : 2);
+
+    if (groupA !== groupB) return groupA - groupB;
+
+    // Within group 0 (available): most recent air date first
+    if (groupA === 0) {
+      const da = unwatchedA.air_date || '';
+      const db2 = unwatchedB.air_date || '';
+      return da < db2 ? 1 : da > db2 ? -1 : 0;
+    }
+
+    // Within group 1 (future): soonest first
+    if (groupA === 1) {
+      return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
+    }
+
+    return 0;
+  });
+
+  if (!filtered.length) {
+    document.getElementById('series-grid').innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">📺</div><h3>Nothing here yet</h3><p>Add some series to get started.</p></div>`;
+    return;
+  }
+
+  document.getElementById('series-grid').innerHTML = filtered.map(s => {
+    const tot = totalEpCount(s);
+    const w = watchedCount(s);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const aired = Object.values(s.seasons || {}).reduce((sum, eps) => {
+      return sum + eps.filter(ep => ep.air_date && new Date(ep.air_date+'T00:00:00') <= today).length;
+    }, 0);
+    const pct = aired ? Math.round(100*w/aired) : 0;
+    const nextFuture = nextEpisode(s);
+    const days = nextFuture ? daysUntil(nextFuture.air_date) : null;
+    let badge = '';
+    if (days !== null && days >= 0 && days <= 7) badge = `<span class="pill amber" style="font-size:10px">New ep soon</span>`;
+    else if (pct === 100) badge = `<span class="pill green" style="font-size:10px">Up to date</span>`;
+
+    const lastWatched = lastWatchedEpisode(s);
+    const nextUp = nextUnwatched(s);
+    const nextUpOrFuture = nextUp || nextFuture;
+    const isFutureEp = !nextUp && !!nextFuture;
+
+    const lastLine = lastWatched
+      ? `<div style="min-width:0;display:flex;align-items:center;gap:6px">
+           <div style="min-width:0;flex:1">
+             <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Last watched</div>
+             <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${epTag(lastWatched)}${lastWatched.name ? ' · '+lastWatched.name : ''}${lastWatched.air_date ? ' · '+fmt(lastWatched.air_date) : ''}</div>
+           </div>
+           ${epToggleBtn(s.id, lastWatched, true, 'Mark as unwatched')}
+         </div>`
+      : `<div style="min-width:0"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Last watched</div><div style="font-size:12px;color:var(--text3)">Not started</div></div>`;
+
+    const nextLine = nextUpOrFuture
+      ? `<div style="min-width:0;display:flex;align-items:center;gap:6px">
+           <div style="min-width:0;flex:1">
+             <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Next to watch</div>
+             <div style="font-size:12px;color:${isFutureEp ? 'var(--amber)' : 'var(--accent2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${epTag(nextUpOrFuture)}${nextUpOrFuture.name ? ' · '+nextUpOrFuture.name : ''}${nextUpOrFuture.air_date ? ' · '+fmt(nextUpOrFuture.air_date) : ''}</div>
+           </div>
+           ${isFutureEp ? '' : epToggleBtn(s.id, nextUpOrFuture, false, 'Mark as watched')}
+         </div>`
+      : `<div style="min-width:0"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Next to watch</div><div style="font-size:12px;color:var(--green)">All caught up</div></div>`;
+
+    const scheduleParts = [];
+    if (s.network) scheduleParts.push(s.network);
+    if (s.airDay) scheduleParts.push(`${s.airDay}s${s.airTime ? ' at ' + s.airTime : ''}`);
+    const scheduleStr = scheduleParts.join(' · ');
+
+    return `<div class="series-card" onclick="openDetail('${s.id}')">
+      ${s.posterUrl ? `<img class="series-card-poster" src="${s.posterUrl}" loading="lazy">` : `<div class="series-card-poster-ph">📺</div>`}
+      <div class="series-card-info">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+          <div class="series-card-title" style="margin:0">${s.name}</div>
+          <span style="font-size:11px;color:var(--text3);white-space:nowrap">${w}/${aired} eps</span>
+          ${badge}
+        </div>
+        ${scheduleStr ? `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${scheduleStr}</div>` : '<div style="margin-bottom:6px"></div>'}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:6px">${lastLine}${nextLine}</div>
+        <div class="series-card-progress"><div class="series-card-progress-bar" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Detail View ──────────────────────────────────────────────────────────────
+let currentDetailId = null;
+let currentSeason = 1;
+
+function openDetail(id, from) {
+  currentDetailId = id;
+  const db = DB.get();
+  const s = db.series[id];
+  const nextUp = nextUnwatched(s) || nextEpisode(s);
+  currentSeason = nextUp ? (nextUp.season || 1) : 1;
+  renderDetail(id);
+  showView('detail', from || currentView);
+}
+
+function renderDetail(id) {
+  const db = DB.get();
+  const s = db.series[id];
+  if (!s) return;
+
+  const seasons = s.seasons || {};
+  const sNums = Object.keys(seasons).map(Number).sort((a,b)=>a-b);
+  if (!sNums.includes(currentSeason) && sNums.length) currentSeason = sNums[0];
+
+  const tot = totalEpCount(s);
+  const w = watchedCount(s);
+  const pct = tot ? Math.round(100*w/tot) : 0;
+
+  const statusOpts = ['watching','completed','paused','plan to watch'];
+  const statusSel = statusOpts.map(o =>
+    `<option value="${o}" ${(s.status||'watching')===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`
+  ).join('');
+
+  let html = `
+    <div class="detail-header">
+      ${s.posterUrl ? `<img class="detail-poster" src="${s.posterUrl}" loading="lazy">` : `<div class="detail-poster-ph">📺</div>`}
+      <div class="detail-info">
+        <div class="detail-title">${s.name}</div>
+        <div class="detail-meta">
+          ${s.year ? `<span>${s.year}</span>` : ''}
+          ${s.network ? `<span>${s.network}</span>` : ''}
+          ${s.airDay ? `<span>Airs ${s.airDay}s${s.airTime ? ' at '+s.airTime : ''}</span>` : ''}
+          <span>${tot} episodes</span>
+          <span>${w} watched (${pct}%)</span>
+        </div>
+        ${s.overview ? `<div class="detail-overview">${s.overview}</div>` : ''}
+        <div class="detail-actions">
+          <select onchange="updateStatus('${id}', this.value)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;">${statusSel}</select>
+          ${sNums.length ? `<button class="btn btn-secondary" onclick="markAllWatched('${id}')">Mark all watched</button>` : ''}
+          <button class="btn btn-danger" onclick="removeSeries('${id}')">Remove</button>
+        </div>
+      </div>
+    </div>`;
+
+  if (sNums.length) {
+    html += `<div class="season-tabs">${sNums.map(n =>
+      `<button class="season-tab ${n===currentSeason?'active':''}" onclick="switchSeason(${n})">Season ${n}</button>`
+    ).join('')}</div>`;
+
+    const eps = seasons[currentSeason] || [];
+    const wMap = s.watched?.[currentSeason] || {};
+    const swatched = eps.filter(e => wMap[e.ep_num]).length;
+
+    html += `<div class="mark-all-row">
+      <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px" onclick="markSeasonWatched('${id}', ${currentSeason})">Mark season watched</button>
+      <span class="progress-text">${swatched}/${eps.length} watched</span>
+    </div>`;
+
+    html += `<div class="episode-list">` + eps.map(ep => {
+      const watched = !!wMap[ep.ep_num];
+      const days = ep.air_date ? daysUntil(ep.air_date) : null;
+      const isFuture = days !== null && days > 0;
+      let datePill = '';
+      if (isFuture) datePill = `<span class="pill amber">${days === 1 ? 'Tomorrow' : 'In '+days+'d'}</span>`;
+      else if (days === 0) datePill = `<span class="pill green">Today</span>`;
+
+      return `<div class="episode-item ${watched?'watched':''} ${isFuture&&!watched?'future':''}">
+        <span class="ep-num">E${String(ep.ep_num).padStart(2,'0')}</span>
+        <span class="ep-title" style="flex:1;min-width:0">
+          <span style="display:block">${ep.name || 'Episode '+ep.ep_num}</span>
+          ${ep.overview ? `<span style="display:block;font-size:12px;color:var(--text2);font-weight:400;margin-top:3px;line-height:1.5">${ep.overview}</span>` : ''}
+        </span>
+        <span class="ep-date" style="align-self:flex-start;margin-top:2px">${datePill || (ep.air_date ? fmt(ep.air_date) : '—')}</span>
+        <button class="ep-check ${watched?'checked':''}" title="${watched?'Unmark':'Mark as watched'}" style="align-self:flex-start;margin-top:1px"
+          onclick="toggleEp('${id}', ${currentSeason}, ${ep.ep_num})">${checkmark()}</button>
+      </div>`;
+    }).join('') + `</div>`;
+  } else {
+    // No episode data yet — show manual add form
+    html += renderManualEpisodeForm(id);
+  }
+
+  document.getElementById('detail-content').innerHTML = html;
+}
+
+function renderManualEpisodeForm(id) {
+  return `
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:4px;">
+    <div style="font-size:14px;color:var(--text2);margin-bottom:14px;">No episode data loaded. Add seasons manually or use a TMDB API key.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <input id="ms-season" type="number" min="1" value="1" placeholder="Season #"
+        style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;width:110px;">
+      <input id="ms-eps" type="number" min="1" value="10" placeholder="Episodes"
+        style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:8px;font-size:14px;width:110px;">
+      <button class="btn btn-primary" onclick="addManualSeason('${id}')">Add Season</button>
+    </div>
+    <p style="font-size:12px;color:var(--text3)">Episode names and air dates require a free TMDB API key (add it at the top of the script).</p>
+  </div>`;
+}
+
+function addManualSeason(id) {
+  const sn = parseInt(document.getElementById('ms-season').value) || 1;
+  const epCount = parseInt(document.getElementById('ms-eps').value) || 10;
+  const db = DB.get();
+  const s = db.series[id];
+  if (!s.seasons) s.seasons = {};
+  s.seasons[sn] = [];
+  for (let i = 1; i <= epCount; i++) {
+    s.seasons[sn].push({ season: sn, ep_num: i, name: 'Episode ' + i, air_date: null });
+  }
+  DB.flush();
+  currentSeason = sn;
+  renderDetail(id);
+  toast('Season ' + sn + ' added!');
+}
+
+function switchSeason(n) {
+  currentSeason = n;
+  renderDetail(currentDetailId);
+}
+
+function toggleEp(id, season, epNum) {
+  const db = DB.get();
+  const s = db.series[id];
+  if (!s.watched) s.watched = {};
+  if (!s.watched[season]) s.watched[season] = {};
+  s.watched[season][epNum] = !s.watched[season][epNum];
+  s.lastActivity = Date.now();
+  DB.flush();
+  autoSync();
+  if (currentView === 'detail') renderDetail(id);
+  if (currentView === 'series') renderSeriesList();
+}
+
+function markSeasonWatched(id, season) {
+  const db = DB.get();
+  const s = db.series[id];
+  const eps = (s.seasons || {})[season] || [];
+  if (!s.watched) s.watched = {};
+  if (!s.watched[season]) s.watched[season] = {};
+  eps.forEach(ep => { s.watched[season][ep.ep_num] = true; });
+  s.lastActivity = Date.now();
+  DB.flush();
+  autoSync();
+  renderDetail(id);
+  toast('Season ' + season + ' marked as watched!');
+}
+
+function markAllWatched(id) {
+  const db = DB.get();
+  const s = db.series[id];
+  if (!s.seasons) return;
+  if (!s.watched) s.watched = {};
+  for (const [sn, eps] of Object.entries(s.seasons)) {
+    if (!s.watched[sn]) s.watched[sn] = {};
+    eps.forEach(ep => { s.watched[sn][ep.ep_num] = true; });
+  }
+  s.lastActivity = Date.now();
+  DB.flush();
+  autoSync();
+  renderDetail(id);
+  toast('All episodes marked as watched!');
+}
+
+function updateStatus(id, val) {
+  const db = DB.get();
+  db.series[id].status = val;
+  DB.flush();
+}
+
+function removeSeries(id) {
+  if (!confirm('Remove this series from your tracker?')) return;
+  const db = DB.get();
+  delete db.series[id];
+  DB.flush();
+  autoSync();
+  showView('series');
+  toast('Series removed.');
+}
+
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+function parseEpisodes(allEps) {
+  const seasons = {};
+  for (const ep of (allEps || [])) {
+    if (!ep.season || !ep.number) continue;
+    if (!seasons[ep.season]) seasons[ep.season] = [];
+    seasons[ep.season].push({
+      season: ep.season,
+      ep_num: ep.number,
+      name: ep.name,
+      air_date: ep.airdate || null,
+      airtime: ep.airtime || null,
+      overview: API.stripHtml(ep.summary)
+    });
+  }
+  return seasons;
+}
+
+function seriesFromTVmaze(d, seasons, existing) {
+  return {
+    ...(existing || {}),
+    id: d.id,
+    name: d.name,
+    year: d.premiered?.slice(0,4),
+    overview: API.stripHtml(d.summary),
+    network: d.network?.name || d.webChannel?.name || '',
+    airDay: d.schedule?.days?.[0] || '',
+    airTime: d.schedule?.time || '',
+    posterUrl: API.poster(d) || existing?.posterUrl || null,
+    seasons,
+  };
+}
+
+// ─── Add Series ───────────────────────────────────────────────────────────────
+async function doSearch() {
+  const q = document.getElementById('add-search-input').value.trim();
+  if (!q) return;
+  const res = document.getElementById('add-search-results');
+
+  res.innerHTML = `<div class="loading-msg"><span class="spinner"></span> Searching…</div>`;
+  try {
+    const results = await API.search(q);
+    if (!results.length) { res.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><h3>No results found</h3></div>`; return; }
+
+    const db = DB.get();
+    res.innerHTML = `<div class="search-results">${results.slice(0, 20).map(({show: r}) => {
+      const added = !!db.series[r.id];
+      const posterUrl = API.poster(r);
+      const poster = posterUrl ? `<img class="search-result-poster" src="${posterUrl}" loading="lazy">` : `<div class="search-result-poster-ph">📺</div>`;
+      return `<div class="search-result-card">
+        ${poster}
+        <div class="search-result-info">
+          <div class="search-result-title">${r.name}</div>
+          <div class="search-result-year">${r.premiered?.slice(0,4)||'—'}</div>
+          <button class="add-btn ${added?'added':''}" id="addbtn-${r.id}"
+            onclick="${added?'':` addSeries(${r.id})`}">
+            ${added ? '✓ Added' : '+ Add to list'}
+          </button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  } catch(e) {
+    res.innerHTML = `<div class="empty-state"><div class="icon">⚠</div><h3>Search failed</h3><p>Please try again.</p></div>`;
+  }
+}
+
+function addManualSeries() {
+  const name = document.getElementById('manual-name').value.trim();
+  if (!name) return;
+  const id = 'manual_' + Date.now();
+  const db = DB.get();
+  db.series[id] = {
+    id,
+    name,
+    year: document.getElementById('manual-year').value.trim(),
+    overview: document.getElementById('manual-overview').value.trim(),
+    status: 'watching',
+    seasons: {},
+    watched: {},
+    lastActivity: Date.now()
+  };
+  DB.flush();
+  toast(`"${name}" added!`);
+  document.getElementById('add-search-results').innerHTML = '';
+  document.getElementById('add-search-input').value = '';
+  openDetail(id, 'add');
+}
+
+async function addSeries(tvmazeId) {
+  const btn = document.getElementById('addbtn-' + tvmazeId);
+  if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+
+  try {
+    const [d, allEps] = await Promise.all([API.details(tvmazeId), API.episodes(tvmazeId)]);
+    if (!d) { toast('Failed to load series data.'); return; }
+
+    const seasons = parseEpisodes(allEps);
+    const db = DB.get();
+    db.series[tvmazeId] = {
+      ...seriesFromTVmaze(d, seasons),
+      status: 'watching',
+      watched: {},
+      lastActivity: Date.now()
+    };
+    DB.flush();
+    autoSync();
+
+    if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = false; }
+    toast(`"${d.name}" added!`);
+  } catch(e) {
+    if (btn) { btn.textContent = '+ Add to list'; btn.disabled = false; }
+    toast('Failed to add series. Please try again.');
+  }
+}
+
+async function refreshAllSeries() {
+  const db = DB.get();
+  const allIds = Object.keys(db.series).filter(id => !String(id).startsWith('manual_'));
+  if (!allIds.length) { toast('No series to update.'); return; }
+
+  const btn = document.getElementById('refresh-all-btn');
+  const status = document.getElementById('refresh-status');
+  btn.disabled = true;
+  btn.textContent = '↻ Updating…';
+  status.style.display = 'flex';
+
+  let done = 0;
+  for (const id of allIds) {
+    const s = db.series[id];
+    status.innerHTML = `<span class="spinner"></span> Updating ${s.name} (${done + 1}/${allIds.length})…`;
+
+    try {
+      const [d, allEps] = await Promise.all([API.details(id), API.episodes(id)]);
+      if (!d) continue;
+
+      const seasons = parseEpisodes(allEps);
+
+      // Preserve watched history, status and lastActivity
+      db.series[id] = seriesFromTVmaze(d, seasons, db.series[id]);
+    } catch(e) {
+      console.warn('Failed to update', id, e);
+    }
+
+    done++;
+    DB.flush();
+  }
+
+  status.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = '↻ Update all';
+  currentFilter = 'all';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+  autoSync();
+  renderSeriesList();
+  toast(`Updated ${done} series!`);
+}
+
+document.getElementById('add-search-btn').addEventListener('click', doSearch);
+document.getElementById('add-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+// Header quick search
+document.getElementById('header-search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    document.getElementById('add-search-input').value = e.target.value;
+    showView('add');
+    doSearch();
+    e.target.value = '';
+  }
+});
+
+// ─── GitHub Gist Sync ─────────────────────────────────────────────────────────
+const SYNC = {
+  getToken() { return localStorage.getItem('tvtracker_gh_token') || ''; },
+  getGistId() { return localStorage.getItem('tvtracker_gh_gist') || ''; },
+  save(token, gistId) {
+    localStorage.setItem('tvtracker_gh_token', token);
+    localStorage.setItem('tvtracker_gh_gist', gistId);
+  },
+  clear() {
+    localStorage.removeItem('tvtracker_gh_token');
+    localStorage.removeItem('tvtracker_gh_gist');
+  },
+  isConfigured() { return !!(this.getToken() && this.getGistId()); },
+
+  async push(data) {
+    const r = await fetch(`https://api.github.com/gists/${this.getGistId()}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${this.getToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        files: { 'tvtracker.json': { content: JSON.stringify(data) } }
+      })
+    });
+    if (!r.ok) throw new Error(`GitHub API error: ${r.status}`);
+    return await r.json();
+  },
+
+  async pull() {
+    const r = await fetch(`https://api.github.com/gists/${this.getGistId()}`, {
+      headers: { 'Authorization': `token ${this.getToken()}` }
+    });
+    if (!r.ok) throw new Error(`GitHub API error: ${r.status}`);
+    const d = await r.json();
+    const file = d.files?.['tvtracker.json'];
+    if (!file) throw new Error('tvtracker.json not found in Gist');
+    return JSON.parse(file.content);
+  }
+};
+
+function setStatus(id, msg, color) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--text3)'; }
+}
+const setSyncStatus = (msg, color) => setStatus('sync-status', msg, color);
+const setModalStatus = (msg, color) => setStatus('sync-modal-status', msg, color || 'var(--text2)');
+
+function openSyncModal() {
+  document.getElementById('sync-token-input').value = SYNC.getToken();
+  document.getElementById('sync-gist-input').value = SYNC.getGistId();
+  document.getElementById('sync-modal-status').textContent = '';
+  document.getElementById('sync-modal').style.display = 'flex';
+}
+
+function closeSyncModal() {
+  document.getElementById('sync-modal').style.display = 'none';
+}
+
+document.getElementById('sync-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('sync-modal')) closeSyncModal();
+});
+
+async function saveAndPush() {
+  const token = document.getElementById('sync-token-input').value.trim();
+  const gistId = document.getElementById('sync-gist-input').value.trim();
+  if (!token || !gistId) { setModalStatus('Please enter both a token and a Gist ID.', 'var(--amber)'); return; }
+  SYNC.save(token, gistId);
+  setModalStatus('Pushing…', 'var(--text2)');
+  try {
+    await SYNC.push(DB.get());
+    setModalStatus('✓ Pushed successfully!', 'var(--green)');
+    setSyncStatus('✓ Synced', 'var(--green)');
+    setTimeout(() => setSyncStatus(''), 4000);
+  } catch(e) {
+    setModalStatus('✗ Push failed: ' + e.message, 'var(--red)');
+  }
+}
+
+async function pullFromGist() {
+  const token = document.getElementById('sync-token-input').value.trim();
+  const gistId = document.getElementById('sync-gist-input').value.trim();
+  if (!token || !gistId) { setModalStatus('Please enter both a token and a Gist ID.', 'var(--amber)'); return; }
+  SYNC.save(token, gistId);
+  setModalStatus('Pulling…', 'var(--text2)');
+  try {
+    const data = await SYNC.pull();
+    DB._d = data;
+    DB.flush();
+    setModalStatus('✓ Pulled successfully!', 'var(--green)');
+    setSyncStatus('✓ Synced', 'var(--green)');
+    setTimeout(() => { setSyncStatus(''); closeSyncModal(); }, 1500);
+    renderSeriesList();
+  } catch(e) {
+    setModalStatus('✗ Pull failed: ' + e.message, 'var(--red)');
+  }
+}
+
+function clearSyncSettings() {
+  SYNC.clear();
+  document.getElementById('sync-token-input').value = '';
+  document.getElementById('sync-gist-input').value = '';
+  setModalStatus('Settings cleared.', 'var(--text2)');
+}
+
+async function autoSync() {
+  if (!SYNC.isConfigured()) return;
+  setSyncStatus('Syncing…', 'var(--text3)');
+  try {
+    await SYNC.push(DB.get());
+    setSyncStatus('✓ Synced', 'var(--green)');
+    setTimeout(() => setSyncStatus(''), 3000);
+  } catch(e) {
+    setSyncStatus('✗ Sync failed', 'var(--red)');
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+currentView = 'series';
+renderSeriesList();
+if (SYNC.isConfigured()) {
+  setSyncStatus('Syncing…', 'var(--text3)');
+  SYNC.pull().then(data => {
+    DB._d = data; DB.flush();
+    renderSeriesList();
+    setSyncStatus('✓ Synced', 'var(--green)');
+    setTimeout(() => setSyncStatus(''), 3000);
+  }).catch(() => setSyncStatus('✗ Sync failed', 'var(--red)'));
+}
+</script>
+</body>
+</html>
