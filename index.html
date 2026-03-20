@@ -905,8 +905,8 @@ function toggleEp(id, season, epNum) {
   s.lastActivity = Date.now();
   DB.flush();
   autoSync();
-  if (currentView === 'detail') renderDetail(id);
-  if (currentView === 'series') renderSeriesList();
+  if (document.getElementById('detail-modal').style.display !== 'none') renderDetail(id);
+  else renderSeriesList();
 }
 
 function markSeasonWatched(id, season) {
@@ -1116,7 +1116,7 @@ async function addSeries(tvmazeId) {
 
 async function refreshAllSeries() {
   const db = DB.get();
-  const allIds = Object.keys(db.series).filter(id => !String(id).startsWith('manual_'));
+  const allIds = Object.keys(db.series);
   if (!allIds.length) { toast('No series to update.'); return; }
 
   const btn = document.getElementById('refresh-all-btn');
@@ -1223,10 +1223,13 @@ function closeModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-['preview-modal', 'sync-modal', 'detail-modal'].forEach(id => {
+['preview-modal', 'sync-modal'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === document.getElementById(id)) closeModal(id);
   });
+});
+document.getElementById('detail-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('detail-modal')) closeDetail();
 });
 
 function openSyncModal() {
