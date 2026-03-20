@@ -768,8 +768,8 @@ function renderSeriesList() {
     const nextFuture = nextEpisode(s);
     const days = nextFuture ? daysUntil(nextFuture.air_date) : null;
     let badge = '';
-    if (days !== null && days >= 0 && days <= 7) badge = `<span class="pill amber" style="font-size:10px">New ep soon</span>`;
-    else if (pct === 100) badge = `<span class="pill green" style="font-size:10px">Up to date</span>`;
+    if (days !== null && days >= 0 && days <= 3) badge = `<span class="pill amber" style="font-size:10px">New ep soon</span>`;
+    else if (!nextUnwatched(s) && aired > 0) badge = `<span class="pill green" style="font-size:10px">Up to date</span>`;
 
     const lastWatched = lastWatchedEpisode(s);
     const nextUp = nextUnwatched(s);
@@ -1008,17 +1008,15 @@ function seriesFromTVmaze(d, seasons, existing) {
 }
 
 function showStatusBadge(showStatus) {
-  if (!showStatus) return '';
+  if (!showStatus || showStatus === 'Running') return '';
   const map = {
-    'Running':            ['accent', 'Running'],
     'Ended':              ['gray',   'Ended'],
-    'To Be Determined':   ['amber',  'TBD'],
-    'In Development':     ['amber',  'In Development'],
+    'To Be Determined':   ['accent', 'TBD'],
+    'In Development':     ['accent', 'In Development'],
   };
   const [type, label] = map[showStatus] || ['gray', showStatus];
   const styles = {
     accent: 'background:var(--accent-bg);color:var(--accent2);border:1px solid rgba(124,111,247,0.3)',
-    amber:  'background:var(--amber-bg);color:var(--amber);border:1px solid rgba(224,162,58,0.3)',
     gray:   'background:var(--bg4);color:var(--text2);border:1px solid var(--border2)',
   };
   return `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;${styles[type]}">${label}</span>`;
@@ -1157,7 +1155,7 @@ const SYNC = {
     const r = await fetch(`https://api.github.com/gists/${this.getGistId()}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `token ${this.getToken()}`,
+        'Authorization': `Bearer ${this.getToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -1170,7 +1168,7 @@ const SYNC = {
 
   async pull() {
     const r = await fetch(`https://api.github.com/gists/${this.getGistId()}`, {
-      headers: { 'Authorization': `token ${this.getToken()}` }
+      headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
     if (!r.ok) throw new Error(`GitHub API error: ${r.status}`);
     const d = await r.json();
@@ -1267,8 +1265,13 @@ if (SYNC.isConfigured()) {
     DB._d = data; DB.flush();
     renderSeriesList();
     setSyncStatus('✓ Synced', 'var(--green)');
-    setTimeout(() => setSyncStatus(''), 3000);
-  }).catch(() => setSyncStatus('✗ Sync failed', 'var(--red)'));
+    setTimeout(() => { setSyncStatus(''); refreshAllSeries(); }, 1000);
+  }).catch(() => {
+    setSyncStatus('✗ Sync failed', 'var(--red)');
+    refreshAllSeries();
+  });
+} else {
+  refreshAllSeries();
 }
 </script>
 </body>
