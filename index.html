@@ -64,7 +64,7 @@
   }
   .logo span { color: var(--text2); font-weight: 400; }
 
-  nav { display: flex; gap: 4px; flex: 1; }
+  nav { display: flex; gap: 4px; }
   nav button {
     background: none;
     border: none;
@@ -86,7 +86,8 @@
     border-radius: 8px;
     padding: 0 12px;
     gap: 8px;
-    width: 260px;
+    flex: 1;
+    max-width: 400px;
   }
   .search-bar input {
     background: none;
@@ -121,6 +122,20 @@
   .pill.accent { background: var(--accent-bg); color: var(--accent2); }
   .pill.gray { background: var(--bg4); color: var(--text2); }
 
+  /* Shared poster */
+  .poster, .poster-ph {
+    background: var(--bg3);
+    object-fit: cover;
+    flex-shrink: 0;
+    display: block;
+  }
+  .poster-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+  }
+
   /* Series list */
   .series-grid {
     display: flex;
@@ -140,29 +155,13 @@
     padding-left: 12px;
   }
   .series-card:hover { border-color: var(--border2); background: var(--bg3); }
-  .series-card-poster {
+  .series-card-poster, .series-card-poster-ph {
     width: 54px;
     height: 90px;
-    background: var(--bg3);
-    object-fit: cover;
-    display: block;
-    flex-shrink: 0;
     border-radius: 6px;
     margin: 8px 0;
   }
-  .series-card-poster-ph {
-    width: 54px;
-    height: 90px;
-    background: var(--bg3);
-    border-radius: 6px;
-    margin: 8px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: var(--text3);
-    flex-shrink: 0;
-  }
+  .series-card-poster-ph { font-size: 22px; }
   .series-card-info { padding: 10px 16px; flex: 1; min-width: 0; }
   .series-card-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
   .series-card-progress {
@@ -192,25 +191,15 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     transition: border-color 0.15s;
+    padding: 8px;
   }
   .search-result-card:hover { border-color: var(--border2); }
-  .search-result-poster {
+  .search-result-poster, .search-result-poster-ph {
     width: 100%;
     aspect-ratio: 2/3;
-    object-fit: cover;
-    background: var(--bg3);
-    display: block;
+    border-radius: 8px;
   }
-  .search-result-poster-ph {
-    width: 100%;
-    aspect-ratio: 2/3;
-    background: var(--bg3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 44px;
-    color: var(--text3);
-  }
+  .search-result-poster-ph { font-size: 44px; }
   .search-result-info { padding: 10px 12px 14px; }
   .search-result-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; line-height: 1.3; }
   .search-result-year { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
@@ -236,26 +225,12 @@
     margin-bottom: 28px;
     align-items: flex-start;
   }
-  .detail-poster {
-    width: 140px;
-    border-radius: var(--radius);
-    object-fit: cover;
-    flex-shrink: 0;
-    aspect-ratio: 2/3;
-    background: var(--bg3);
-  }
-  .detail-poster-ph {
+  .detail-poster, .detail-poster-ph {
     width: 140px;
     aspect-ratio: 2/3;
-    background: var(--bg3);
     border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 50px;
-    color: var(--text3);
-    flex-shrink: 0;
   }
+  .detail-poster-ph { font-size: 50px; }
   .detail-info { flex: 1; }
   .detail-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
   .detail-meta { font-size: 13px; color: var(--text2); margin-bottom: 10px; display: flex; gap: 12px; flex-wrap: wrap; }
@@ -418,22 +393,6 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 
-  /* Back button */
-  .back-btn {
-    background: none;
-    border: none;
-    color: var(--text2);
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 0;
-    margin-bottom: 18px;
-    transition: color 0.15s;
-  }
-  .back-btn:hover { color: var(--text); }
-
   .mark-all-row {
     display: flex;
     gap: 10px;
@@ -456,15 +415,14 @@
     <div class="logo">TV<span>tracker</span></div>
     <nav>
       <button class="active" data-view="series">My Series</button>
-      <button data-view="add">+ Add</button>
     </nav>
     <div class="search-bar">
       <span class="search-icon">⌕</span>
-      <input type="text" placeholder="Quick search…" id="header-search">
+      <input type="text" placeholder="Search for series…" id="header-search">
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
       <div id="sync-status" style="font-size:12px;color:var(--text3)"></div>
-      <button onclick="openSyncModal()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;transition:all 0.15s" id="sync-btn">☁ Sync</button>
+      <button onclick="openSyncModal()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;transition:all 0.15s" id="sync-btn">⇅ Sync</button>
     </div>
   </header>
 
@@ -472,10 +430,10 @@
     <!-- My Series -->
     <div class="view active" id="view-series">
       <div class="filter-row">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="watching">Watching</button>
+        <button class="filter-btn active" data-filter="watching">Watching</button>
         <button class="filter-btn" data-filter="completed">Completed</button>
         <button class="filter-btn" data-filter="paused">Paused</button>
+        <button class="filter-btn" data-filter="plan to watch">Plan to watch</button>
         <button id="refresh-all-btn" style="margin-left:auto;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:all 0.15s" onclick="refreshAllSeries()">↻ Update all</button>
       </div>
       <div id="refresh-status" style="display:none;font-size:13px;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px"></div>
@@ -491,15 +449,34 @@
       <div id="add-search-results"></div>
     </div>
 
-    <!-- Detail -->
-    <div class="view" id="view-detail">
-      <button class="back-btn" id="back-btn">← Back</button>
-      <div id="detail-content"></div>
-    </div>
+    <!-- Detail (now a modal) -->
+    <div class="view" id="view-detail"></div>
   </main>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Detail Modal -->
+<div id="detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:860px;margin:0 auto;position:relative">
+    <button onclick="closeDetail()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;z-index:1">×</button>
+    <div id="detail-content" style="padding:28px"></div>
+  </div>
+</div>
+
+<!-- Series Preview Modal -->
+<div id="preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:520px;margin:0 16px;max-height:90vh;overflow-y:auto">
+    <div id="preview-content"></div>
+  </div>
+</div>
+
+<!-- Series Preview Modal -->
+<div id="preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:520px;margin:0 16px;max-height:90vh;overflow-y:auto">
+    <div id="preview-content"></div>
+  </div>
+</div>
 
 <!-- Sync Modal -->
 <div id="sync-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
@@ -604,16 +581,9 @@ function checkmark() {
   return `<svg viewBox="0 0 14 14"><polyline points="2,7 6,11 12,3"/></svg>`;
 }
 
-function posterEl(url, cls, alt) {
-  if (url) return `<img class="${cls}" src="${url}" alt="${alt||''}" loading="lazy">`;
-  return `<div class="${cls.replace('poster','poster-ph')}">📺</div>`;
-}
-
 // ─── Navigation ───────────────────────────────────────────────────────────────
-let currentView = 'dashboard';
-let detailBack = 'dashboard';
-
-function showView(name, fromView) {
+let currentView = 'series';
+function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('nav button').forEach(b => {
@@ -621,16 +591,20 @@ function showView(name, fromView) {
   });
   currentView = name;
   if (name === 'series') renderSeriesList();
-  if (fromView) detailBack = fromView;
 }
 
 document.querySelectorAll('nav button').forEach(b => {
   b.addEventListener('click', () => showView(b.dataset.view));
 });
 
-document.getElementById('back-btn').addEventListener('click', () => showView(detailBack));
 
-// ─── Series helpers ───────────────────────────────────────────────────────────
+// ─── Series helpers ─────────────────────────────────────────────────────────
+function posterHtml(url, imgCls, phCls, phSize) {
+  return url
+    ? `<img class="poster ${imgCls}" src="${url}" loading="lazy">`
+    : `<div class="poster-ph ${phCls}" style="font-size:${phSize||'22px'}">📺</div>`;
+}
+
 function totalEpCount(s) {
   if (!s.seasons) return s.episodeCount || 0;
   return Object.values(s.seasons).reduce((t, eps) => t + eps.length, 0);
@@ -700,7 +674,7 @@ function epToggleBtn(seriesId, ep, isWatched, label) {
 }
 
 
-let currentFilter = 'all';
+let currentFilter = 'watching';
 
 document.querySelectorAll('.filter-btn').forEach(b => {
   b.addEventListener('click', () => {
@@ -803,7 +777,7 @@ function renderSeriesList() {
     const scheduleStr = scheduleParts.join(' · ');
 
     return `<div class="series-card" onclick="openDetail('${s.id}')">
-      ${s.posterUrl ? `<img class="series-card-poster" src="${s.posterUrl}" loading="lazy">` : `<div class="series-card-poster-ph">📺</div>`}
+      ${posterHtml(s.posterUrl, "series-card-poster", "series-card-poster-ph")}
       <div class="series-card-info">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
           <div class="series-card-title" style="margin:0">${s.name}</div>
@@ -823,14 +797,20 @@ function renderSeriesList() {
 let currentDetailId = null;
 let currentSeason = 1;
 
-function openDetail(id, from) {
+function openDetail(id) {
   currentDetailId = id;
   const db = DB.get();
   const s = db.series[id];
   const nextUp = nextUnwatched(s) || nextEpisode(s);
   currentSeason = nextUp ? (nextUp.season || 1) : 1;
   renderDetail(id);
-  showView('detail', from || currentView);
+  document.getElementById('detail-modal').style.display = 'flex';
+  document.getElementById('detail-modal').scrollTop = 0;
+}
+
+function closeDetail() {
+  closeModal('detail-modal');
+  renderSeriesList();
 }
 
 function renderDetail(id) {
@@ -853,7 +833,7 @@ function renderDetail(id) {
 
   let html = `
     <div class="detail-header">
-      ${s.posterUrl ? `<img class="detail-poster" src="${s.posterUrl}" loading="lazy">` : `<div class="detail-poster-ph">📺</div>`}
+      ${posterHtml(s.posterUrl, "detail-poster", "detail-poster-ph", "50px")}
       <div class="detail-info">
         <div class="detail-title">${s.name}</div>
         <div class="detail-meta">
@@ -1023,6 +1003,56 @@ function showStatusBadge(showStatus) {
   return `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;${styles[type]}">${label}</span>`;
 }
 
+// ─── Series Preview ──────────────────────────────────────────────────────────
+function openPreview(id) {
+  const entry = (window._searchResults || []).find(({show}) => show.id === id);
+  if (!entry) return;
+  const r = entry.show;
+  const db = DB.get();
+  const added = !!db.series[r.id];
+  const posterUrl = API.poster(r);
+  const overview = API.stripHtml(r.summary) || 'No description available.';
+  const network = r.network?.name || r.webChannel?.name || '—';
+  const status = r.status || '—';
+  const genres = (r.genres || []).join(', ') || '—';
+  const schedule = r.schedule?.days?.[0] ? `${r.schedule.days[0]}s${r.schedule.time ? ' at '+r.schedule.time : ''}` : '—';
+  const statusBadge = showStatusBadge(status);
+
+  document.getElementById('preview-content').innerHTML = `
+    <div style="display:flex;gap:0;align-items:stretch">
+      ${posterUrl
+        ? `<img src="${posterUrl}" style="width:110px;object-fit:cover;border-radius:var(--radius-lg);flex-shrink:0;margin:16px 0 16px 16px;align-self:flex-start">`
+        : `<div style="width:110px;min-height:150px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--text3);border-radius:var(--radius-lg);flex-shrink:0;margin:16px 0 16px 16px">📺</div>`}
+      <div style="padding:18px 20px;flex:1;min-width:0">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+          <div style="font-size:17px;font-weight:700;line-height:1.3">${r.name}</div>
+          <button onclick="closePreview()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;flex-shrink:0">×</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          ${r.premiered?.slice(0,4) ? `<span style="font-size:12px;color:var(--text2)">${r.premiered.slice(0,4)}</span>` : ''}
+          ${statusBadge || `<span style="font-size:12px;color:var(--text2)">${status}</span>`}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:14px">
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Network</div><div style="font-size:12px;color:var(--text2)">${network}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Schedule</div><div style="font-size:12px;color:var(--text2)">${schedule}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Genres</div><div style="font-size:12px;color:var(--text2)">${genres}</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 20px 20px">
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px">${overview}</div>
+      <button class="add-btn ${added?'added':''}" id="preview-addbtn-${r.id}"
+        style="width:auto;padding:8px 20px"
+        onclick="event.stopPropagation();${added ? '' : `addSeries(${r.id});document.getElementById('preview-addbtn-${r.id}').textContent='✓ Added';document.getElementById('preview-addbtn-${r.id}').classList.add('added')`}">
+        ${added ? '✓ Already added' : '+ Add to list'}
+      </button>
+    </div>`;
+
+  document.getElementById('preview-modal').style.display = 'flex';
+}
+
+function closePreview() { closeModal('preview-modal'); }
+
 // ─── Add Series ───────────────────────────────────────────────────────────────
 async function doSearch() {
   const q = document.getElementById('add-search-input').value.trim();
@@ -1032,20 +1062,21 @@ async function doSearch() {
   res.innerHTML = `<div class="loading-msg"><span class="spinner"></span> Searching…</div>`;
   try {
     const results = await API.search(q);
+    window._searchResults = results;
     if (!results.length) { res.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><h3>No results found</h3></div>`; return; }
 
     const db = DB.get();
     res.innerHTML = `<div class="search-results">${results.slice(0, 20).map(({show: r}) => {
       const added = !!db.series[r.id];
       const posterUrl = API.poster(r);
-      const poster = posterUrl ? `<img class="search-result-poster" src="${posterUrl}" loading="lazy">` : `<div class="search-result-poster-ph">📺</div>`;
-      return `<div class="search-result-card">
+      const poster = posterHtml(posterUrl, "search-result-poster", "search-result-poster-ph", "44px");
+      return `<div class="search-result-card" style="cursor:pointer" onclick="openPreview(${r.id})">
         ${poster}
         <div class="search-result-info">
           <div class="search-result-title">${r.name}</div>
           <div class="search-result-year">${r.premiered?.slice(0,4)||'—'}</div>
           <button class="add-btn ${added?'added':''}" id="addbtn-${r.id}"
-            onclick="${added?'':` addSeries(${r.id})`}">
+            onclick="event.stopPropagation();${added?'':` addSeries(${r.id})`}">
             ${added ? '✓ Added' : '+ Add to list'}
           </button>
         </div>
@@ -1118,8 +1149,8 @@ async function refreshAllSeries() {
   status.style.display = 'none';
   btn.disabled = false;
   btn.textContent = '↻ Update all';
-  currentFilter = 'all';
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+  currentFilter = 'watching';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'watching'));
   autoSync();
   renderSeriesList();
   toast(`Updated ${done} series!`);
@@ -1128,10 +1159,12 @@ async function refreshAllSeries() {
 document.getElementById('add-search-btn').addEventListener('click', doSearch);
 document.getElementById('add-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
-// Header quick search
+// Header search
 document.getElementById('header-search').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
-    document.getElementById('add-search-input').value = e.target.value;
+    const q = e.target.value.trim();
+    if (!q) return;
+    document.getElementById('add-search-input').value = q;
     showView('add');
     doSearch();
     e.target.value = '';
@@ -1186,6 +1219,16 @@ function setStatus(id, msg, color) {
 const setSyncStatus = (msg, color) => setStatus('sync-status', msg, color);
 const setModalStatus = (msg, color) => setStatus('sync-modal-status', msg, color || 'var(--text2)');
 
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+['preview-modal', 'sync-modal', 'detail-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  });
+});
+
 function openSyncModal() {
   document.getElementById('sync-token-input').value = SYNC.getToken();
   document.getElementById('sync-gist-input').value = SYNC.getGistId();
@@ -1193,13 +1236,7 @@ function openSyncModal() {
   document.getElementById('sync-modal').style.display = 'flex';
 }
 
-function closeSyncModal() {
-  document.getElementById('sync-modal').style.display = 'none';
-}
-
-document.getElementById('sync-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('sync-modal')) closeSyncModal();
-});
+function closeSyncModal() { closeModal('sync-modal'); }
 
 function saveSyncInputs() {
   const token = document.getElementById('sync-token-input').value.trim();
