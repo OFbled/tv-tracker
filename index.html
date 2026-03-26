@@ -346,7 +346,7 @@
   .search-submit-btn:hover { background: var(--accent2); }
 
   /* Filters */
-  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
   .filter-btn {
     padding: 6px 14px;
     border-radius: 20px;
@@ -413,9 +413,6 @@
 <div class="app">
   <header>
     <div class="logo">TV<span>tracker</span></div>
-    <nav>
-      <button class="active" data-view="series">My Series</button>
-    </nav>
     <div class="search-bar">
       <span class="search-icon">⌕</span>
       <input type="text" placeholder="Search for series…" id="header-search">
@@ -430,13 +427,12 @@
     <!-- My Series -->
     <div class="view active" id="view-series">
       <div class="filter-row">
-        <button class="filter-btn active" data-filter="watching">Watching</button>
-        <button class="filter-btn" data-filter="completed">Completed</button>
-        <button class="filter-btn" data-filter="paused">Paused</button>
-        <button class="filter-btn" data-filter="plan to watch">Plan to watch</button>
-        <button id="refresh-all-btn" style="margin-left:auto;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:all 0.15s" onclick="refreshAllSeries()">↻ Update all</button>
+        <button class="filter-btn active" data-filter="watch-now">Watch now</button>
+        <button class="filter-btn" data-filter="coming-soon">Coming soon</button>
+        <button class="filter-btn" data-filter="all-caught-up">All caught up</button>
+        <div id="last-refresh-info" style="margin-left:auto;font-size:12px;color:var(--text3);display:none">Last updated <span id="last-refresh-time"></span> · <span id="last-refresh-count"></span> series</div>
       </div>
-      <div id="refresh-status" style="display:none;font-size:13px;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px"></div>
+      <div id="refresh-status" style="display:none;font-size:13px;color:var(--text2);align-items:center;gap:8px"></div>
       <div class="series-grid" id="series-grid"></div>
     </div>
 
@@ -508,7 +504,6 @@
       <a href="https://gist.github.com" target="_blank" style="color:var(--accent2);text-decoration:none">Create a Gist ↗</a>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button onclick="saveAndPush()" style="background:var(--accent);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Save & push</button>
       <button onclick="pullFromGist()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer">Pull from Gist</button>
       <button onclick="clearSyncSettings()" style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;margin-left:auto">Clear settings</button>
     </div>
@@ -674,7 +669,7 @@ function epToggleBtn(seriesId, ep, isWatched, label) {
 }
 
 
-let currentFilter = 'watching';
+let currentFilter = 'watch-now';
 
 document.querySelectorAll('.filter-btn').forEach(b => {
   b.addEventListener('click', () => {
@@ -685,13 +680,18 @@ document.querySelectorAll('.filter-btn').forEach(b => {
   });
 });
 
+function getSeriesGroup(s) {
+  const nextUp = nextUnwatched(s);
+  if (nextUp) return 'watch-now';
+  const nextFut = nextEpisode(s);
+  if (nextFut) return 'coming-soon';
+  return 'all-caught-up';
+}
+
 function renderSeriesList() {
   const db = DB.get();
   const all = Object.values(db.series);
-  const filtered = all.filter(s => {
-    if (currentFilter === 'all') return true;
-    return (s.status || 'watching') === currentFilter;
-  });
+  const filtered = all.filter(s => getSeriesGroup(s) === currentFilter);
 
   filtered.sort((a, b) => {
     const today = new Date(); today.setHours(0,0,0,0);
@@ -724,7 +724,10 @@ function renderSeriesList() {
       return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
     }
 
-    return 0;
+    // Within group 2 (all caught up): oldest last watched episode first
+    const lastA = lastWatchedEpisode(a)?.air_date || '';
+    const lastB = lastWatchedEpisode(b)?.air_date || '';
+    return lastA < lastB ? -1 : lastA > lastB ? 1 : 0;
   });
 
   if (!filtered.length) {
@@ -826,11 +829,6 @@ function renderDetail(id) {
   const w = watchedCount(s);
   const pct = tot ? Math.round(100*w/tot) : 0;
 
-  const statusOpts = ['watching','completed','paused','plan to watch'];
-  const statusSel = statusOpts.map(o =>
-    `<option value="${o}" ${(s.status||'watching')===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`
-  ).join('');
-
   let html = `
     <div class="detail-header">
       ${posterHtml(s.posterUrl, "detail-poster", "detail-poster-ph", "50px")}
@@ -846,7 +844,6 @@ function renderDetail(id) {
         </div>
         ${s.overview ? `<div class="detail-overview">${s.overview}</div>` : ''}
         <div class="detail-actions">
-          <select onchange="updateStatus('${id}', this.value)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;">${statusSel}</select>
           ${sNums.length ? `<button class="btn btn-secondary" onclick="markAllWatched('${id}')">Mark all watched</button>` : ''}
           <button class="btn btn-danger" onclick="removeSeries('${id}')">Remove</button>
         </div>
@@ -937,12 +934,6 @@ function markAllWatched(id) {
   autoSync();
   renderDetail(id);
   toast('All episodes marked as watched!');
-}
-
-function updateStatus(id, val) {
-  const db = DB.get();
-  db.series[id].status = val;
-  DB.flush();
 }
 
 function removeSeries(id) {
@@ -1099,7 +1090,6 @@ async function addSeries(tvmazeId) {
     const db = DB.get();
     db.series[tvmazeId] = {
       ...seriesFromTVmaze(d, seasons),
-      status: 'watching',
       watched: {},
       lastActivity: Date.now()
     };
@@ -1119,11 +1109,9 @@ async function refreshAllSeries() {
   const allIds = Object.keys(db.series);
   if (!allIds.length) { toast('No series to update.'); return; }
 
-  const btn = document.getElementById('refresh-all-btn');
   const status = document.getElementById('refresh-status');
-  btn.disabled = true;
-  btn.textContent = '↻ Updating…';
   status.style.display = 'flex';
+  status.style.marginBottom = '12px';
 
   let done = 0;
   for (const id of allIds) {
@@ -1147,10 +1135,18 @@ async function refreshAllSeries() {
   }
 
   status.style.display = 'none';
-  btn.disabled = false;
-  btn.textContent = '↻ Update all';
-  currentFilter = 'watching';
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'watching'));
+  status.style.marginBottom = '0';
+
+  const infoEl = document.getElementById('last-refresh-info');
+  const timeEl = document.getElementById('last-refresh-time');
+  const countEl = document.getElementById('last-refresh-count');
+  if (infoEl && timeEl && countEl) {
+    const now = new Date();
+    timeEl.textContent = now.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    countEl.textContent = done;
+    infoEl.style.display = 'block';
+  }
+
   autoSync();
   renderSeriesList();
   toast(`Updated ${done} series!`);
