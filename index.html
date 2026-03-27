@@ -24,7 +24,6 @@
     --green: #4caf85;
     --green-bg: rgba(76,175,133,0.15);
     --amber: #e0a23a;
-    --amber-bg: rgba(224,162,58,0.15);
     --red: #e05c5c;
     --radius: 10px;
     --radius-lg: 14px;
@@ -64,19 +63,6 @@
   }
   .logo span { color: var(--text2); font-weight: 400; }
 
-  nav { display: flex; gap: 4px; }
-  nav button {
-    background: none;
-    border: none;
-    color: var(--text2);
-    padding: 6px 14px;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s;
-  }
-  nav button:hover { background: var(--bg3); color: var(--text); }
-  nav button.active { background: var(--accent-bg); color: var(--accent2); }
 
   .search-bar {
     display: flex;
@@ -107,7 +93,6 @@
   .view { display: none; }
   .view.active { display: block; }
 
-
   .pill {
     display: inline-flex;
     align-items: center;
@@ -118,9 +103,8 @@
     gap: 4px;
   }
   .pill.green { background: var(--green-bg); color: var(--green); }
-  .pill.amber { background: var(--amber-bg); color: var(--amber); }
+  .pill.amber { background: rgba(224,162,58,0.15); color: var(--amber); }
   .pill.accent { background: var(--accent-bg); color: var(--accent2); }
-  .pill.gray { background: var(--bg4); color: var(--text2); }
 
   /* Shared poster */
   .poster, .poster-ph {
@@ -249,7 +233,7 @@
   .btn-primary:hover { background: var(--accent2); }
   .btn-secondary { background: var(--bg3); color: var(--text2); border-color: var(--border); }
   .btn-secondary:hover { color: var(--text); border-color: var(--border2); }
-  .btn-danger { background: var(--red-bg); color: var(--red); border-color: rgba(224,92,92,0.3); }
+  .btn-danger { background: rgba(224,92,92,0.15); color: var(--red); border-color: rgba(224,92,92,0.3); }
   .btn-danger:hover { background: var(--red); color: #fff; }
 
   /* Season tabs */
@@ -313,37 +297,6 @@
   .empty-state h3 { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
   .empty-state p { font-size: 14px; }
 
-  /* Search input in add view */
-  .add-search-wrap {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .add-search-input {
-    flex: 1;
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-size: 15px;
-    padding: 10px 16px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .add-search-input:focus { border-color: var(--accent); }
-  .add-search-input::placeholder { color: var(--text3); }
-  .search-submit-btn {
-    background: var(--accent);
-    border: none;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 10px 20px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .search-submit-btn:hover { background: var(--accent2); }
 
   /* Filters */
   .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
@@ -402,7 +355,6 @@
   .progress-text { font-size: 13px; color: var(--text2); margin-left: auto; }
 
   @media (max-width: 700px) {
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
     header { padding: 0 14px; gap: 12px; }
     .search-bar { display: none; }
     main { padding: 18px 14px; }
@@ -412,7 +364,7 @@
 <body>
 <div class="app">
   <header>
-    <div class="logo">TV<span>tracker</span></div>
+    <div class="logo" onclick="showView('series')" style="cursor:pointer">TV<span>tracker</span></div>
     <div class="search-bar">
       <span class="search-icon">⌕</span>
       <input type="text" placeholder="Search for series…" id="header-search">
@@ -438,15 +390,9 @@
 
     <!-- Add Series -->
     <div class="view" id="view-add">
-      <div class="add-search-wrap">
-        <input class="add-search-input" type="text" id="add-search-input" placeholder="Search for a TV series…">
-        <button class="search-submit-btn" id="add-search-btn">Search</button>
-      </div>
       <div id="add-search-results"></div>
     </div>
 
-    <!-- Detail (now a modal) -->
-    <div class="view" id="view-detail"></div>
   </main>
 </div>
 
@@ -457,13 +403,6 @@
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:860px;margin:0 auto;position:relative">
     <button onclick="closeDetail()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;z-index:1">×</button>
     <div id="detail-content" style="padding:28px"></div>
-  </div>
-</div>
-
-<!-- Series Preview Modal -->
-<div id="preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:520px;margin:0 16px;max-height:90vh;overflow-y:auto">
-    <div id="preview-content"></div>
   </div>
 </div>
 
@@ -581,17 +520,9 @@ let currentView = 'series';
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  document.querySelectorAll('nav button').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === name);
-  });
   currentView = name;
   if (name === 'series') renderSeriesList();
 }
-
-document.querySelectorAll('nav button').forEach(b => {
-  b.addEventListener('click', () => showView(b.dataset.view));
-});
-
 
 // ─── Series helpers ─────────────────────────────────────────────────────────
 function posterHtml(url, imgCls, phCls, phSize) {
@@ -995,8 +926,9 @@ function showStatusBadge(showStatus) {
 }
 
 // ─── Series Preview ──────────────────────────────────────────────────────────
+let _searchResults = [];
 function openPreview(id) {
-  const entry = (window._searchResults || []).find(({show}) => show.id === id);
+  const entry = _searchResults.find(({show}) => show.id === id);
   if (!entry) return;
   const r = entry.show;
   const db = DB.get();
@@ -1045,15 +977,17 @@ function openPreview(id) {
 function closePreview() { closeModal('preview-modal'); }
 
 // ─── Add Series ───────────────────────────────────────────────────────────────
-async function doSearch() {
-  const q = document.getElementById('add-search-input').value.trim();
+let _currentSearchQuery = '';
+async function doSearch(q) {
+  if (!q) q = _currentSearchQuery;
   if (!q) return;
+  _currentSearchQuery = q;
   const res = document.getElementById('add-search-results');
 
   res.innerHTML = `<div class="loading-msg"><span class="spinner"></span> Searching…</div>`;
   try {
     const results = await API.search(q);
-    window._searchResults = results;
+    _searchResults = results;
     if (!results.length) { res.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><h3>No results found</h3></div>`; return; }
 
     const db = DB.get();
@@ -1152,17 +1086,13 @@ async function refreshAllSeries() {
   toast(`Updated ${done} series!`);
 }
 
-document.getElementById('add-search-btn').addEventListener('click', doSearch);
-document.getElementById('add-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-
 // Header search
 document.getElementById('header-search').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     const q = e.target.value.trim();
     if (!q) return;
-    document.getElementById('add-search-input').value = q;
     showView('add');
-    doSearch();
+    doSearch(q);
     e.target.value = '';
   }
 });
