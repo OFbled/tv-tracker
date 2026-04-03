@@ -541,18 +541,24 @@ function watchedCount(s) {
   return Object.values(s.watched).reduce((t, eps) => t + Object.values(eps).filter(Boolean).length, 0);
 }
 
+const STREAMING_NETWORKS = ['netflix', 'apple tv'];
+function isStreaming(s) {
+  return STREAMING_NETWORKS.includes((s.network || '').toLowerCase());
+}
+
 function nextUnwatched(s) {
   if (!s.seasons) return null;
+  const streaming = isStreaming(s);
   const sNums = Object.keys(s.seasons).map(Number).sort((a,b)=>a-b);
   for (const sn of sNums) {
     const eps = s.seasons[sn];
     for (const ep of eps) {
       if (!s.watched?.[sn]?.[ep.ep_num]) {
-        // Only return if aired before today (today's episodes treated as future)
+        // For streaming networks, treat today's episodes as aired; otherwise only include past episodes
         if (!ep.air_date) return ep;
         const d = new Date(ep.air_date+'T00:00:00'); d.setHours(0,0,0,0);
         const today = new Date(); today.setHours(0,0,0,0);
-        if (d < today) return ep;
+        if (streaming ? d <= today : d < today) return ep;
       }
     }
   }
@@ -561,13 +567,16 @@ function nextUnwatched(s) {
 
 function nextEpisode(s) {
   if (!s.seasons) return null;
+  const streaming = isStreaming(s);
   const sNums = Object.keys(s.seasons).map(Number).sort((a,b)=>a-b);
   const today = new Date(); today.setHours(0,0,0,0);
   for (const sn of sNums) {
     for (const ep of s.seasons[sn]) {
       if (!ep.air_date) continue;
       const d = new Date(ep.air_date+'T00:00:00'); d.setHours(0,0,0,0);
-      if (d >= today && !s.watched?.[sn]?.[ep.ep_num]) return ep;
+      // For streaming, today counts as aired so future starts tomorrow; otherwise today is still future
+      const isFuture = streaming ? d > today : d >= today;
+      if (isFuture && !s.watched?.[sn]?.[ep.ep_num]) return ep;
     }
   }
   return null;
@@ -677,7 +686,7 @@ function renderSeriesList() {
     const nextFuture = nextEpisode(s);
     const days = nextFuture ? daysUntil(nextFuture.air_date) : null;
     let badge = '';
-    if (days !== null && days >= 0 && days <= 3) badge = `<span class="pill amber" style="font-size:10px">New ep soon</span>`;
+    if (days !== null && (isStreaming(s) ? days >= 1 : days >= 0) && days <= 3) badge = `<span class="pill amber" style="font-size:10px">New ep soon</span>`;
     else if (!nextUnwatched(s) && aired > 0) badge = `<span class="pill green" style="font-size:10px">Up to date</span>`;
 
     const lastWatched = lastWatchedEpisode(s);
